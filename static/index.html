@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AstroDecay ML — Orbital Debris Reentry Lifespan Predictor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="satellite-icon">🛰️</div>
+        <div>
+          <div class="brand-title">AstroDecay <span class="badge-tag">ML v1.0</span></div>
+          <p class="brand-subtitle">Physics-Informed Orbital Debris & CubeSat Reentry Predictor</p>
+        </div>
+      </div>
+      <div class="system-status">
+        <span class="status-indicator"></span>
+        <span id="backendStatus">FastAPI Core Active</span>
+      </div>
+    </header>
+
+    <!-- Quick Presets -->
+    <section class="presets-section">
+      <div class="presets-label">⚡ QUICK TELEMETRY PRESETS:</div>
+      <div class="presets-buttons" id="presetsContainer">
+        <button type="button" class="preset-btn" onclick="applyPreset('cubesat_low')">3U CubeSat (380 km)</button>
+        <button type="button" class="preset-btn" onclick="applyPreset('starlink_derelict')">Starlink Bus (540 km)</button>
+        <button type="button" class="preset-btn" onclick="applyPreset('rocket_stage')">Spent Rocket Stage (720 km)</button>
+        <button type="button" class="preset-btn" onclick="applyPreset('solar_max_debris')">Solar Storm Debris (310 km)</button>
+      </div>
+    </section>
+
+    <!-- Main Workspace Grid -->
+    <main class="workspace-grid">
+      <!-- Input Panel -->
+      <section class="card input-card">
+        <div class="card-header">
+          <div class="card-title">📡 Orbital Telemetry Parameters</div>
+          <span class="tag">LEO Regime</span>
+        </div>
+
+        <form id="orbitForm">
+          <div class="form-group">
+            <label for="objectType">Object Classification</label>
+            <select id="objectType" required>
+              <option value="CubeSat (3U/6U)">CubeSat (3U/6U)</option>
+              <option value="MicroSat (50-100kg)">MicroSat (50-100kg)</option>
+              <option value="Rocket Upper Stage">Rocket Upper Stage</option>
+              <option value="Fragmentation Debris">Fragmentation Debris</option>
+              <option value="Decommissioned Constellation">Decommissioned Constellation</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="perigee">
+                Perigee Altitude (km)
+                <span class="hint" id="perigeeHint">Lowest point (200-1000)</span>
+              </label>
+              <input type="number" id="perigee" step="0.1" min="200" max="1200" value="400.0" required>
+            </div>
+            <div class="form-group">
+              <label for="apogee">
+                Apogee Altitude (km)
+                <span class="hint" id="apogeeHint">Highest point (≥ Perigee)</span>
+              </label>
+              <input type="number" id="apogee" step="0.1" min="200" max="2000" value="420.0" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="inclination">
+                Orbital Inclination (°)
+                <span class="hint">0° to 110°</span>
+              </label>
+              <input type="number" id="inclination" step="0.1" min="0" max="180" value="51.6" required>
+            </div>
+            <div class="form-group">
+              <label for="ballisticCoeff">
+                Ballistic Coeff. (kg/m²)
+                <span class="hint">Mass / (Cd × Area)</span>
+              </label>
+              <input type="number" id="ballisticCoeff" step="0.1" min="5" max="350" value="48.0" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="solarFlux">
+                Solar Flux F10.7 (sfu)
+                <span class="hint">Thermospheric drag driver (70-250)</span>
+              </label>
+              <input type="number" id="solarFlux" step="0.1" min="60" max="300" value="145.0" required>
+            </div>
+            <div class="form-group">
+              <label for="rcs">
+                Radar Cross-Section (m²)
+                <span class="hint">Effective area</span>
+              </label>
+              <input type="number" id="rcs" step="0.01" min="0.01" max="50" value="0.12" required>
+            </div>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn-primary">
+            <span class="btn-icon">⚡</span>
+            <span>Predict Orbital Reentry</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- Output Panel -->
+      <section class="card output-card">
+        <div class="card-header">
+          <div class="card-title">📉 Reentry Trajectory Assessment</div>
+          <span class="badge-status" id="badgeStatus">READY</span>
+        </div>
+
+        <div id="resultsContent">
+          <!-- Big Highlight Metric -->
+          <div class="hero-metric-box">
+            <div class="metric-label">ESTIMATED TIME UNTIL ATMOSPHERIC BURN-UP</div>
+            <div class="metric-value-group">
+              <span class="metric-hero-num" id="predDays">---</span>
+              <span class="metric-unit">DAYS</span>
+            </div>
+            <div class="metric-sub" id="predYears">Equiv. --- Years in Orbit</div>
+          </div>
+
+          <!-- Risk and Compliance Pill -->
+          <div class="status-strip">
+            <div class="strip-item">
+              <div class="strip-label">RISK CLASS</div>
+              <div class="strip-value" id="riskClass">Pending Calculation</div>
+            </div>
+            <div class="strip-item">
+              <div class="strip-label">FCC 5-YEAR COMPLIANCE</div>
+              <div class="strip-value" id="complianceStatus">---</div>
+            </div>
+          </div>
+
+          <!-- Secondary Physics Telemetry -->
+          <div class="telemetry-grid">
+            <div class="tele-item">
+              <span class="tele-label">Daily Altitude Loss</span>
+              <span class="tele-val" id="decayRate">---</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Mean Altitude</span>
+              <span class="tele-val" id="meanAlt">---</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Orbital Eccentricity</span>
+              <span class="tele-val" id="eccentricity">---</span>
+            </div>
+            <div class="tele-item">
+              <span class="tele-label">Solar Activity Level</span>
+              <span class="tele-val" id="solarRegime">---</span>
+            </div>
+          </div>
+
+          <!-- Mission Guidance -->
+          <div class="recommendation-card" id="guidanceBox">
+            <div class="rec-header">
+              <span class="rec-icon">🛡️</span>
+              <span class="rec-title">Mission Safety Guidance</span>
+            </div>
+            <p class="rec-text" id="guidanceText">
+              Adjust parameters or choose a preset to evaluate orbital decay and atmospheric reentry timeline.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Model Stats & Specs -->
+    <footer class="app-footer">
+      <div class="footer-stats">
+        <div class="footer-stat-item">
+          <span class="stat-num" id="r2Score">0.9896</span>
+          <span class="stat-name">Regression R² Score</span>
+        </div>
+        <div class="footer-stat-item">
+          <span class="stat-num" id="modelAccuracy">93.4%</span>
+          <span class="stat-name">Classification Accuracy</span>
+        </div>
+        <div class="footer-stat-item">
+          <span class="stat-num">4,000</span>
+          <span class="stat-name">LEO Orbit Observations</span>
+        </div>
+        <div class="footer-stat-item">
+          <span class="stat-num">Random Forest</span>
+          <span class="stat-name">Scikit-Learn Engine</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
