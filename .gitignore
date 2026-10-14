@@ -1,0 +1,61 @@
+﻿# ── Python ──────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ── Virtual Environments ─────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+Lib/
+
+# ── Environment Variables ─────────────────
+.env
+.env.*
+*.env
+
+# ── ML Artifacts & Data ──────────────────
+# Uncomment if you do NOT want to track model files
+# *.joblib
+# *.pkl
+# *.h5
+# *.pt
+# *.onnx
+
+# Large datasets (keep CSV in git only if small)
+# *.csv
+
+# ── Jupyter ──────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── IDE & Editor ─────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Logs & Temp ──────────────────────────
+*.log
+*.tmp
+*.bak
+logs/
+tmp/
+
+# ── OS ───────────────────────────────────
+.DS_Store
+desktop.ini
